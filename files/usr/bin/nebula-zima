@@ -1,0 +1,22 @@
+#!/bin/sh
+# Start Nebula from /DATA/AppData/nebula/config.yml now and at every boot.
+#   nebula-zima enable     check the config (nebula -test), start nebula.service, add the boot watchdog
+#   nebula-zima disable    stop it and remove the boot watchdog
+#   nebula-zima status     service state and watchdog
+set -eu
+CONF=/DATA/AppData/nebula/config.yml
+WD=/usr/libexec/nebula/unit-watchdog.sh
+case "${1:-}" in
+enable)
+  [ "$(id -u)" -eq 0 ] || { echo "needs root: sudo nebula-zima enable" >&2; exit 1; }
+  [ -f "$CONF" ] || { echo "missing $CONF (see /usr/share/doc/nebula/README)" >&2; exit 1; }
+  /usr/bin/nebula -test -config "$CONF" || { echo "config check failed: $CONF" >&2; exit 1; }
+  sh "$WD" enable nebula.service
+  ;;
+disable)
+  [ "$(id -u)" -eq 0 ] || { echo "needs root: sudo nebula-zima disable" >&2; exit 1; }
+  sh "$WD" disable nebula.service
+  ;;
+status) sh "$WD" status nebula.service ;;
+*) sed -n '2,5p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac
