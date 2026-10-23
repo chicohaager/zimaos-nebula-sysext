@@ -11,11 +11,11 @@
 
 ## The tile
 
-**New network:** creates the network's CA on this host — valid 10 years; `nebula-cert`'s default is one year, after which every certificate of the network ends — gives this host the first address and makes it the lighthouse. **Add a device:** signs a certificate (next free address or a chosen one) and hands out one `config.yml` with the CA, certificate and key inline, pointing at this lighthouse — the device's key is not kept on the host. **Join:** paste `ca.crt`, this host's certificate and key from another network's CA owner. Turn on/off (on = also at every boot); **Reset** moves every file, CA key included, to `/DATA/AppData/nebula/.reset/`. With ZFW installed the tile shows whether the listen port is open there and opens it with one click.
+**New network:** creates the network's CA on this host — valid 10 years; `nebula-cert`'s default is one year, after which every certificate of the network ends — gives this host the first address and makes it the lighthouse. **Add a device:** signs a certificate (next free address or a chosen one) and hands out one `config.yml` with the CA, certificate and key inline, pointing at this lighthouse — the device's key is not kept on the host. **Join:** paste `ca.crt`, this host's certificate and key from another network's CA owner. Turn on/off (on = also at every boot); **Reset** moves every file, CA key included, to `/DATA/AppData/nebula/.reset/`. **With ZFW installed, turning Nebula on opens its listen port there** (rule `mod-udp-<port>`, committed); turning it off or resetting removes exactly that rule again.
 
 Measured on ZimaOS 1.8.0 (ZimaBoard 2), 2026-10-23: set up in Chrome as a lighthouse (certificates valid until 2036), turned on (`nebula1` up); a device config signed by the tile, started in a network namespace, reached the host over the overlay (TCP answer, handshake in the device log).
 
-**ZFW and the Nebula interface:** ZFW 1.0.29 trusts `wg+`, `tun0`, `zt+` and `tailscale0`, not `nebula1`; traffic to services on this host over the overlay is dropped until ZFW includes `nebula+` (prepared on ZFW's branch `nebula-bypass`) or a rule allows it.
+**ZFW and the Nebula interface:** ZFW up to 1.0.29 trusts `wg+`, `tun0`, `zt+` and `tailscale0`, not `nebula1`, so traffic to services on this host over the overlay is dropped. ZFW 1.0.30 adds `nebula+` (branch `nebula-bypass`). Measured on ZimaOS 1.8.0 with that ZFW build, 2026-10-23: turned on in Chrome, the tile opened UDP 4245; a device config signed by the tile reached the host over the overlay with no other firewall rule; Reset removed the rule again.
 
 ## Use
 
