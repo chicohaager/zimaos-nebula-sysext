@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+  <title>Nebula</title>
+  <link rel="icon" type="image/svg+xml" href="./appicon.svg">
+  <script>
+    try { var t = localStorage.getItem('nebula.theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="./styles.css?v=@VERSION@">
+  <style>
+    .kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 13px; }
+    .kv dt { color: var(--text-muted); }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+    .form-grid label, .pem label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-muted); }
+    .pem { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 10px; }
+    textarea { font-family: var(--font-mono); font-size: 11px; min-height: 120px; border: 1px solid var(--card-border); border-radius: 10px; padding: 8px; background: var(--card-bg); color: var(--text); }
+    pre.cfg { background: var(--neutral-tint); padding: 12px; border-radius: 10px; font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 50vh; overflow: auto; }
+    .head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .head .app-actions { margin-left: auto; margin-top: 0; }
+    .zfw-line { margin-top: 10px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title-row">
+      <h1><img src="./appicon.svg" alt="">Nebula</h1>
+      <span class="version">v@VERSION@</span>
+      <div class="header-tools">
+        <select id="theme-select" aria-label="Theme">
+          <option value="auto">Theme: auto</option>
+          <option value="light">Theme: light</option>
+          <option value="dark">Theme: dark</option>
+        </select>
+        <button id="refresh-btn" class="btn-secondary">Refresh</button>
+      </div>
+    </div>
+    <p class="subtitle">Overlay network by Slack's Nebula: every member holds a certificate from your own CA. Files live in <span class="mono" id="conf-dir">/DATA/AppData/nebula</span>.</p>
+    <div id="status" role="status" aria-live="polite"></div>
+  </header>
+  <main id="main"><div class="loading">Loading&hellip;</div></main>
+
+  <template id="setup">
+    <section class="card">
+      <h2 class="section-title">Set up Nebula on this host</h2>
+      <nav class="tabs" role="tablist" style="margin-top:6px">
+        <button class="tab-btn active" data-tab="new" role="tab">New network (this host is the lighthouse)</button>
+        <button class="tab-btn" data-tab="join" role="tab">Join an existing network</button>
+      </nav>
+      <form id="setup-new" class="tab-panel active" autocomplete="off">
+        <p class="muted" style="font-size:13px">Creates the network's CA on this host (valid 10 years) and gives this host the first address. Other devices get their certificate and a ready config.yml here.</p>
+        <div class="form-grid">
+          <label>Network name<input type="text" name="network" value="Home network" maxlength="60" required></label>
+          <label>Address range<input type="text" name="cidr" value="10.42.0.0/24" required></label>
+          <label>Name of this host<input type="text" name="node_name" value="zima" maxlength="40" required></label>
+          <label>Listen port (UDP)<input type="number" name="listen_port" value="4242" min="1" max="65535" required></label>
+        </div>
+        <button class="btn-primary" type="submit" style="margin-top:10px">Create network</button>
+      </form>
+      <form id="setup-join" class="tab-panel" autocomplete="off">
+        <p class="muted" style="font-size:13px">Paste what the network's CA owner made for this host (<span class="mono">nebula-cert sign -name … -networks …</span>).</p>
+        <div class="pem">
+          <label>ca.crt<textarea name="ca_crt" required></textarea></label>
+          <label>this host's .crt<textarea name="host_crt" required></textarea></label>
+          <label>this host's .key<textarea name="host_key" required></textarea></label>
+        </div>
+        <div class="form-grid" style="margin-top:10px">
+          <label>Lighthouse address in the network<input type="text" name="lighthouse" placeholder="10.42.0.1" required></label>
+          <label>Lighthouse reachable at (host:port)<input type="text" name="lighthouse_endpoint" placeholder="vpn.example.org:4242" required></label>
+          <label>Listen port (0 = any)<input type="number" name="listen_port" value="0" min="0" max="65535"></label>
+        </div>
+        <button class="btn-primary" type="submit" style="margin-top:10px">Join network</button>
+      </form>
+    </section>
+  </template>
+
+  <template id="node-dialog">
+    <div class="modal-overlay">
+      <div class="card modal" style="max-width:720px">
+        <h3>config.yml for <span class="node-name"></span></h3>
+        <p>Holds the node's private key — shown <b>once</b>, not kept on this host. Put it on the device as <span class="mono">/etc/nebula/config.yml</span> (Linux) or import it in the Mobile Nebula app, then start Nebula there.</p>
+        <pre class="cfg"></pre>
+        <div class="app-actions">
+          <button class="btn-secondary" data-act="copy">Copy</button>
+          <button class="btn-secondary" data-act="download">Download config.yml</button>
+          <button class="btn-primary" data-act="close">Done</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="./common.js?v=@VERSION@"></script>
+  <script src="./app.js?v=@VERSION@"></script>
+</body>
+</html>
