@@ -42,6 +42,8 @@ ZFW drops incoming traffic it does not know. It does not know Nebula's UDP port 
 
 ## Install (on the ZimaOS host)
 
+With the [Module Manager](https://github.com/chicohaager/modmanager) (v0.2.5 or later): tab **Catalog**, **Nebula**, **Install** — it checks the release checksum and refuses an image that would replace files of ZimaOS. By hand:
+
 ```sh
 cd /tmp
 curl -fsSLO https://github.com/chicohaager/zimaos-nebula-sysext/releases/latest/download/nebula-amd64.raw
