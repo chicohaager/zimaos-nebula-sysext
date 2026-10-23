@@ -15,7 +15,7 @@
 
 Measured on ZimaOS 1.8.0 (ZimaBoard 2), 2026-10-23: set up in Chrome as a lighthouse (certificates valid until 2036), turned on (`nebula1` up); a device config signed by the tile, started in a network namespace, reached the host over the overlay (TCP answer, handshake in the device log).
 
-**ZFW and the Nebula interface:** ZFW up to 1.0.29 trusts `wg+`, `tun0`, `zt+` and `tailscale0`, not `nebula1`, so traffic to services on this host over the overlay is dropped. ZFW 1.0.30 adds `nebula+` (branch `nebula-bypass`). Measured on ZimaOS 1.8.0 with that ZFW build, 2026-10-23: turned on in Chrome, the tile opened UDP 4245; a device config signed by the tile reached the host over the overlay with no other firewall rule; Reset removed the rule again.
+**ZFW and the Nebula interface:** ZFW up to 1.0.29 trusts `wg+`, `tun0`, `zt+` and `tailscale0`, not `nebula1`, so traffic to services on this host over the overlay is dropped. **ZFW 1.0.30 adds `nebula+`** — update ZFW first, then apply once so the running rules contain it. Measured on ZimaOS 1.8.0 with a development build of that change, 2026-10-23: turned on in Chrome, the tile opened UDP 4245; a device config signed by the tile reached the host over the overlay with no other firewall rule; Reset removed the rule again.
 
 ## Use
 
@@ -38,7 +38,7 @@ A unit inside a sysext is not started at boot on ZimaOS: `multi-user.target` is 
 
 ### Firewall (ZFW)
 
-ZFW drops incoming traffic it does not know, and it knows neither Nebula's UDP port (`listen.port`, 4242 in the example config) nor its interface (`tun.dev`, `nebula1` in the example config). On a host with ZFW, open the UDP port for a lighthouse or a node others connect to, and allow the services you want to reach over the overlay on the Nebula interface. Nebula's own `firewall:` section in the config applies in addition.
+ZFW drops incoming traffic it does not know. It does not know Nebula's UDP port (`listen.port`, 4242 in the example config) — open it for a lighthouse or a node others connect to (the tile does that when it turns Nebula on). Up to ZFW 1.0.29 it does not know the interface either (`tun.dev`, `nebula1` in the example config): allow the services you want to reach over the overlay on it, or update to ZFW 1.0.30, which trusts `nebula+`. Nebula's own `firewall:` section in the config applies in addition.
 
 ## Install (on the ZimaOS host)
 
