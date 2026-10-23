@@ -37,7 +37,9 @@ cp README.md build/root/usr/share/doc/nebula/README
 # The tile: module JSON (its "services" make zpkg enable and start nebula-web; without the
 # JSON zpkg answers "module not installed", rc=1 — measured 1.8.0), UI files and the backend.
 sh "$MODKIT/sysext/add-web.sh" nebula build/root "$VERSION"
-CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" go build -trimpath -ldflags="-s -w -X main.version=$VERSION" \
+# -buildvcs=false: without it Go stamps the nearest tag and "dirty" (any untracked file) into the binary,
+# so a rebuild from the release tag differed from the release (measured 2026-10-23, restic-web).
+CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" go build -trimpath -buildvcs=false -ldflags="-s -w -X main.version=$VERSION" \
   -o build/root/usr/bin/nebula-web ./cmd/nebula-web
 sh "$MODKIT/sysext/build-sysext.sh" nebula build/root "$ARCH" dist "$VERSION"
 cat "dist/nebula-$ARCH.raw.sha256"
