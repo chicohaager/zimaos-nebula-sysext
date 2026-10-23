@@ -1,0 +1,21 @@
+[Unit]
+Description=Nebula tile for ZimaOS (setup, devices, status)
+Documentation=https://github.com/chicohaager/zimaos-nebula-sysext
+After=network-online.target zimaos-gateway.service
+Wants=network-online.target
+RequiresMountsFor=/DATA/AppData
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/nebula-web
+Restart=always
+RestartSec=5
+# Root in the host's namespaces: it writes the files in /DATA/AppData/nebula and runs
+# nebula-cert, nebula-zima and systemctl. No Protect*/Private* directives — they would give the service a
+# private mount namespace (measured for modmanager on 1.8.0).
+RestrictRealtime=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

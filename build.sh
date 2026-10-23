@@ -23,6 +23,9 @@ mkdir -p build/root build/dl
 curl -fsSL -o "build/dl/$TGZ" "https://github.com/slackhq/nebula/releases/download/$NEBULA_VERSION/$TGZ"
 echo "$SUM  build/dl/$TGZ" | sha256sum -c -
 tar -xzf "build/dl/$TGZ" -C build/dl nebula nebula-cert
+# The backend tests run the real nebula-cert and nebula (amd64 build host).
+go vet ./...
+if [ "$ARCH" = amd64 ]; then NEBULA_BIN="$PWD/build/dl" go test ./...; else go test ./...; fi
 
 cp -a files/. build/root/
 install -m 755 build/dl/nebula build/dl/nebula-cert build/root/usr/bin/
@@ -31,6 +34,10 @@ cp "$MODKIT/sysext/unit-watchdog.sh" build/root/usr/libexec/nebula/unit-watchdog
 curl -fsSL -o build/root/usr/share/doc/nebula/LICENSE "https://raw.githubusercontent.com/slackhq/nebula/$NEBULA_VERSION/LICENSE"
 echo "nebula $NEBULA_VERSION ($TGZ sha256 $SUM)" > build/root/usr/share/doc/nebula/packages.txt
 cp README.md build/root/usr/share/doc/nebula/README
-printf '{\n  "name": "nebula",\n  "version": "v%s"\n}\n' "$VERSION" > build/root/usr/share/casaos/modules/nebula.json
+# The tile: module JSON (its "services" make zpkg enable and start nebula-web; without the
+# JSON zpkg answers "module not installed", rc=1 — measured 1.8.0), UI files and the backend.
+sh "$MODKIT/sysext/add-web.sh" nebula build/root "$VERSION"
+CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" go build -trimpath -ldflags="-s -w -X main.version=$VERSION" \
+  -o build/root/usr/bin/nebula-web ./cmd/nebula-web
 sh "$MODKIT/sysext/build-sysext.sh" nebula build/root "$ARCH" dist "$VERSION"
 cat "dist/nebula-$ARCH.raw.sha256"

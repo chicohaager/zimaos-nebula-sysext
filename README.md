@@ -1,12 +1,21 @@
 # Nebula for ZimaOS
 
-**Version 1.0.0** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
+**Version 1.1.0** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
 
 [Nebula](https://github.com/slackhq/nebula), the overlay network by Slack, as a native ZimaOS module — no container, the node runs on the host with its own TUN interface.
 
 - `nebula` and `nebula-cert` **v1.11.2**, the static binaries from the upstream release, checked against a pinned sha256;
 - `nebula.service` — the upstream example unit, reading `/DATA/AppData/nebula/config.yml`;
-- `nebula-zima` — checks the config and starts Nebula now and at every boot.
+- `nebula-zima` — checks the config and starts Nebula now and at every boot;
+- the **Nebula** tile on the dashboard (`nebula-web`).
+
+## The tile
+
+**New network:** creates the network's CA on this host — valid 10 years; `nebula-cert`'s default is one year, after which every certificate of the network ends — gives this host the first address and makes it the lighthouse. **Add a device:** signs a certificate (next free address or a chosen one) and hands out one `config.yml` with the CA, certificate and key inline, pointing at this lighthouse — the device's key is not kept on the host. **Join:** paste `ca.crt`, this host's certificate and key from another network's CA owner. Turn on/off (on = also at every boot); **Reset** moves every file, CA key included, to `/DATA/AppData/nebula/.reset/`. With ZFW installed the tile shows whether the listen port is open there and opens it with one click.
+
+Measured on ZimaOS 1.8.0 (ZimaBoard 2), 2026-10-23: set up in Chrome as a lighthouse (certificates valid until 2036), turned on (`nebula1` up); a device config signed by the tile, started in a network namespace, reached the host over the overlay (TCP answer, handshake in the device log).
+
+**ZFW and the Nebula interface:** ZFW 1.0.29 trusts `wg+`, `tun0`, `zt+` and `tailscale0`, not `nebula1`; traffic to services on this host over the overlay is dropped until ZFW includes `nebula+` (prepared on ZFW's branch `nebula-bypass`) or a rule allows it.
 
 ## Use
 
@@ -46,7 +55,7 @@ sudo systemctl daemon-reload
 ## Build and test
 
 ```sh
-sh build.sh amd64              # downloads the release tarball and checks its pinned sha256; needs ../lintux-modkit
+sh build.sh amd64              # downloads the release tarball and checks its pinned sha256; needs Go, node, ../lintux-modkit; the backend tests run the downloaded nebula-cert
 sudo sh tools/host-test.sh     # on the host after installing; `cleanup` removes what it created
 ```
 
