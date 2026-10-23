@@ -1,0 +1,21 @@
+# examples/service_scripts/nebula.service from slackhq/nebula, adapted for ZimaOS: config in
+# /DATA/AppData/nebula/config.yml (/DATA is persistent and mounted late, hence RequiresMountsFor),
+# tun is a module on ZimaOS (CONFIG_TUN=m), no [Install] - a sysext unit is not started at boot,
+# the watchdog timer written by `nebula-zima enable` starts it.
+[Unit]
+Description=Nebula overlay network (/DATA/AppData/nebula/config.yml)
+Wants=basic.target network-online.target nss-lookup.target time-sync.target
+After=basic.target network.target network-online.target
+RequiresMountsFor=/DATA/AppData/nebula
+StartLimitIntervalSec=0
+Documentation=https://nebula.defined.net/docs/
+
+[Service]
+Type=notify
+NotifyAccess=main
+SyslogIdentifier=nebula
+ExecStartPre=-/usr/bin/modprobe tun
+ExecStart=/usr/bin/nebula -config /DATA/AppData/nebula/config.yml
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
