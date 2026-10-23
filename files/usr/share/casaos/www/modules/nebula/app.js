@@ -104,11 +104,34 @@ async function refresh() {
   }
 }
 
+// ZFW steps after on/off; a ZFW failure is reported, the Nebula action itself stands.
+function listenPort() { const el = document.querySelector('.zfw-line'); return el ? Number(el.dataset.port) : 0; }
+
+async function zfwOpen(port) {
+  if (!zfwPresent || !port) return null;
+  try {
+    if (await zfw.allowsUdp(port)) return null;
+    await zfw.openUdp(port, `Nebula ${port}/udp`, 'Added by the Nebula tile when Nebula was turned on');
+    return { note: `UDP ${port} opened in ZFW` };
+  } catch (e) {
+    return { warning: `ZFW was not changed (${describe(e)}) — other devices cannot reach this host until UDP ${port} is open` };
+  }
+}
+
+async function zfwClose(port) {
+  if (!zfwPresent || !port) return null;
+  try {
+    return (await zfw.closeUdp(port)) ? { note: `UDP ${port} closed in ZFW` } : null;
+  } catch (e) {
+    return { warning: `the ZFW rule for UDP ${port} could not be removed (${describe(e)})` };
+  }
+}
+
 async function act(label, fn) {
   setStatus(`${label} …`);
   try {
     const r = await fn();
-    setStatus(`${label}: done.`, 'ok');
+    setStatus(r && r.warning ? `${label}: done, but ${r.warning}` : `${label}: done${r && r.note ? ` — ${r.note}` : ''}.`, r && r.warning ? 'err' : 'ok');
     await load();
     return r;
   } catch (e) {
@@ -140,12 +163,22 @@ document.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-act]');
   if (!btn || btn.closest('.modal')) return;
   switch (btn.dataset.act) {
-    case 'enable': await act('Turning Nebula on', () => api(`${API}/action`, { method: 'POST', body: { action: 'enable' } })); break;
-    case 'disable': await act('Turning Nebula off', () => api(`${API}/action`, { method: 'POST', body: { action: 'disable' } })); break;
+    // On also opens the listen port in ZFW (it drops unknown UDP, measured on 1.8.0); Off and
+    // Reset remove exactly that rule again.
+    case 'enable': {
+      const port = listenPort();
+      await act('Turning Nebula on', async () => { await api(`${API}/action`, { method: 'POST', body: { action: 'enable' } }); return zfwOpen(port); });
+      break;
+    }
+    case 'disable': {
+      const port = listenPort();
+      await act('Turning Nebula off', async () => { await api(`${API}/action`, { method: 'POST', body: { action: 'disable' } }); return zfwClose(port); });
+      break;
+    }
     case 'restart': await act('Restarting Nebula', () => api(`${API}/action`, { method: 'POST', body: { action: 'restart' } })); break;
     case 'reset':
       if (!armed(btn)) return;
-      await act('Resetting (files kept in .reset/)', () => api(`${API}/reset`, { method: 'POST', body: {} }));
+      { const port = listenPort(); await act('Resetting (files kept in .reset/)', async () => { await api(`${API}/reset`, { method: 'POST', body: {} }); return zfwClose(port); }); }
       break;
     case 'zfw-open': {
       const port = Number(btn.dataset.port);
