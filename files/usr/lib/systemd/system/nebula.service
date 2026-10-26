@@ -15,6 +15,10 @@ Type=notify
 NotifyAccess=main
 SyslogIdentifier=nebula
 ExecStartPre=-/usr/bin/modprobe tun
+# /DATA/AppData is writable by everyone on ZimaOS 1.8 (0777, no sticky bit): the guard sets the
+# sticky bit and refuses a folder that is not root's or a symlink, before nebula reads its
+# config and keys as root (lintux-modkit appdata-guard.sh, KB §79.11).
+ExecStartPre=/bin/sh /usr/libexec/nebula/appdata-guard.sh /DATA/AppData/nebula
 ExecStart=/usr/bin/nebula -config /DATA/AppData/nebula/config.yml
 ExecReload=/bin/kill -HUP $MAINPID
 Restart=always

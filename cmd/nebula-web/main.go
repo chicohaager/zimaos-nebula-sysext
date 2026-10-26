@@ -47,14 +47,18 @@ const dev = "nebula1"
 
 var mu sync.Mutex
 
-func main() {
-	webmod.Run(webmod.Options{
+func main() { webmod.Run(options()) }
+
+func options() webmod.Options {
+	return webmod.Options{
 		Name: "nebula", Service: "nebula-web", Binary: "/usr/bin/nebula-web",
 		Route: "/nebula", Version: version, API: api,
 		// nebula keeps the old binary when zpkg replaces the module (it restarts only
 		// nebula-web): webmod restarts it then (lintux-modkit stale).
 		Restart: []string{"nebula.service"},
-	})
+		// 0777 without sticky bit on ZimaOS 1.8: checked before the tile reads the config (KB §79.11)
+		DataDirs: []string{confDir},
+	}
 }
 
 func api(verify func(http.Handler) http.Handler) http.Handler {
