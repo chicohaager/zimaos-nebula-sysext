@@ -1,6 +1,6 @@
 # Nebula for ZimaOS
 
-**Version 1.1.1** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
+**Version 1.1.2** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
 
 [Nebula](https://github.com/slackhq/nebula), the overlay network by Slack, as a native ZimaOS module — no container, the node runs on the host with its own TUN interface.
 
