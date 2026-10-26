@@ -183,3 +183,25 @@ func TestResetKeepsTheKeys(t *testing.T) {
 		t.Fatalf("still configured: %v", st)
 	}
 }
+
+// /DATA/AppData is 0777 without the sticky bit on ZimaOS 1.8 (KB §79.11): before
+// root reads its files there — the tile at its start, the daemon systemd starts —
+// the folder is checked (lintux-modkit appdata).
+func TestTheDataFolderIsCheckedBeforeRootReadsIt(t *testing.T) {
+	found := false
+	for _, d := range options().DataDirs {
+		found = found || d == confDir
+	}
+	if !found {
+		t.Errorf("tile: DataDirs %v without %s", options().DataDirs, confDir)
+	}
+	unit, err := os.ReadFile("../../files/usr/lib/systemd/system/nebula.service")
+	if err != nil {
+		t.Fatal(err)
+	}
+	guard := "ExecStartPre=/bin/sh /usr/libexec/nebula/appdata-guard.sh /DATA/AppData/nebula\n"
+	g, s := strings.Index(string(unit), guard), strings.Index(string(unit), "ExecStart=")
+	if g < 0 || s < 0 || g > s {
+		t.Errorf("%s: want %q before ExecStart=", "../../files/usr/lib/systemd/system/nebula.service", guard)
+	}
+}
