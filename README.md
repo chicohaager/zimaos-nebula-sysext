@@ -60,6 +60,7 @@ sudo systemctl daemon-reload
 
 ```sh
 sh build.sh amd64              # downloads the release tarball and checks its pinned sha256; needs Go, node, ../lintux-modkit; the backend tests run the downloaded nebula-cert
+tools/check-reproducible.sh     # before a release: builds twice (umask 022 and 002) and fails when the bytes differ
 sudo sh tools/host-test.sh     # on the host after installing; `cleanup` removes what it created
 ```
 
