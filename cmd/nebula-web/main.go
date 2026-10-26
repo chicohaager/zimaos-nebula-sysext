@@ -51,6 +51,9 @@ func main() {
 	webmod.Run(webmod.Options{
 		Name: "nebula", Service: "nebula-web", Binary: "/usr/bin/nebula-web",
 		Route: "/nebula", Version: version, API: api,
+		// nebula keeps the old binary when zpkg replaces the module (it restarts only
+		// nebula-web): webmod restarts it then (lintux-modkit stale).
+		Restart: []string{"nebula.service"},
 	})
 }
 
