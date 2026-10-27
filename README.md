@@ -62,7 +62,8 @@ sudo systemctl daemon-reload
 sh build.sh amd64              # downloads the release tarball and checks its pinned sha256; needs Go, node, ../lintux-modkit; the backend tests run the downloaded nebula-cert
 tools/check-reproducible.sh     # before a release: builds three times (umask 022, 002 and 077) and fails when the bytes differ
 ../lintux-modkit/tools/check-release.sh . v<version> nebula# after the release: rebuilds the tag, same bytes as the asset
-sudo sh tools/host-test.sh     # on the host after installing; `cleanup` removes what it created
+sudo sh tools/host-test.sh     # on the host after installing, with lintux-modkit tools/hosttest-lib.sh next to it;
+                               # a failure or abort removes what it created, after a clean run `cleanup` does
 ```
 
 The host test makes the host a lighthouse and runs a second node in its own network namespace behind a veth pair; a TCP connection over the overlay must fail before `enable` and get through after it. Measured on ZimaOS 1.8.0 (ZimaBoard 2) with ZFW active, 2026-10-23: 8 OK, 0 FAIL. The test opens the paths it needs in ZFW and removes exactly those again (`cleanup`). The test CA key is deleted right after signing.
