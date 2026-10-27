@@ -8,9 +8,9 @@
 # test files in /DATA/AppData/nebula (config.yml, test CA) and /DATA/AppData/nebula-testpeer.
 set -u
 D=/DATA/AppData/nebula; P=/DATA/AppData/nebula-testpeer; NS=nbtpeer
-ok=0; bad=0
-pass() { ok=$((ok + 1)); echo "OK   $1"; }
-fail() { bad=$((bad + 1)); echo "FAIL $1"; }
+# pass/fail and the cleanup after a failure or abort: lintux-modkit tools/hosttest-lib.sh, copied next to this file
+. "$(dirname "$0")/hosttest-lib.sh"
+HT_LIST=/etc/lintux-hosttest/nebula.list
 
 # TCP probe with python3 (ZimaOS' ping is a BusyBox applet that exits 1 without output, even
 # for --help, measured 1.8.0). The host answers "pong"; the client connects from the namespace.
@@ -35,7 +35,7 @@ zfw_open() { iptables -S ZFW-IN >/dev/null 2>&1 || return 0
   for spec in "$@"; do eval "iptables -I ZFW-IN 1 $spec -m comment --comment module-host-test -j ACCEPT"; done; }
 zfw_close() { iptables -S ZFW-IN 2>/dev/null | grep -- '--comment module-host-test' | sed 's/^-A /-D /' | while read -r r; do eval "iptables $r"; done; }
 
-if [ "${1:-}" = cleanup ]; then
+nebula_cleanup() {
   zfw_close
   nebula-zima disable
   if [ -f "$P/peer.pid" ]; then pid=$(cat "$P/peer.pid"); [ "$(ps -p "$pid" -o comm=)" = nebula ] && kill "$pid"; fi
@@ -43,12 +43,17 @@ if [ "${1:-}" = cleanup ]; then
   rm -f "$D/config.yml" "$D/ca.crt" "$D/host.crt" "$D/host.key" "$P/peer.yml" "$P/peer.crt" "$P/peer.key" "$P/ca.crt" "$P/peer.pid" "$P/peer.log"
   rmdir "$D" "$P" 2>/dev/null
   echo "cleanup done: $(ip -o link show | grep -c 'nebt0\|vnbt0') test interfaces left"
+}
+if [ "${1:-}" = cleanup ]; then
+  nebula_cleanup
+  rm -f "$HT_LIST"
   exit 0
 fi
 
 echo "zfw: $(systemctl is-active zfw.service 2>/dev/null || true), chain ZFW-IN: $(iptables -S ZFW-IN >/dev/null 2>&1 && echo present || echo absent)"
 umask 077; mkdir -p "$D" "$P"
 [ -e "$D/config.yml" ] && { echo "refusing: $D/config.yml exists (not a test setup)"; exit 1; }
+ht_init "$HT_LIST"; ht_made call nebula_cleanup   # from here on a failure or abort runs nebula_cleanup
 T=$(mktemp -d)
 ( cd "$T" && nebula-cert ca -name zima-test-ca >/dev/null \
   && nebula-cert sign -name host -networks 10.233.0.1/24 -out-crt host.crt -out-key host.key \
@@ -99,4 +104,4 @@ ok_tcp=0; for _ in 1 2 3; do probe "$NS" 10.233.0.1 7833 && { ok_tcp=1; break; }
 if systemctl reload nebula.service; then pass "reload (HUP)"; else fail "reload"; fi
 sleep 1; [ "$(systemctl is-active nebula.service)" = active ] && pass "still active after reload" || fail "not active after reload"
 echo "nebula host-test: $ok OK, $bad FAIL"
-[ "$bad" -eq 0 ]
+ht_done
