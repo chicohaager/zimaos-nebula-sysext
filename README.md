@@ -1,6 +1,6 @@
 # Nebula for ZimaOS
 
-**Version 1.1.2** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
+**Version 1.1.3** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
 
 [Nebula](https://github.com/slackhq/nebula), the overlay network by Slack, as a native ZimaOS module — no container, the node runs on the host with its own TUN interface.
 
@@ -40,7 +40,7 @@ A unit inside a sysext is not started at boot on ZimaOS: `multi-user.target` is 
 
 ZFW drops incoming traffic it does not know. It does not know Nebula's UDP port (`listen.port`, 4242 in the example config) — open it for a lighthouse or a node others connect to (the tile does that when it turns Nebula on). Up to ZFW 1.0.29 it does not know the interface either (`tun.dev`, `nebula1` in the example config): allow the services you want to reach over the overlay on it, or update to ZFW 1.0.30, which trusts `nebula+`. Nebula's own `firewall:` section in the config applies in addition.
 
-**Folder check** (since 1.1.1): `/DATA/AppData` is writable by everyone on ZimaOS 1.8 (mode 0777 without the sticky bit; the share of `/DATA` is writable over SMB), so another user could replace `/DATA/AppData/nebula` with a folder of their own — a config and keys root then reads. Before nebula starts and before the tile reads the config, the module sets the sticky bit on `/DATA/AppData` (then only a folder's owner can rename it) and refuses a `nebula` folder that is a symlink, not root's, or writable by others (lintux-modkit `appdata`).
+**Folder check** (since 1.1.1): `/DATA/AppData` is writable by everyone on ZimaOS 1.8 (mode 0777 without the sticky bit; the share of `/DATA` is writable over SMB), so another user could replace `/DATA/AppData/nebula` with a folder of their own — a config and keys root then reads. Before nebula starts and before the tile reads the config, the module sets the sticky bit on `/DATA/AppData` (then only a folder's owner can rename it) and refuses a `nebula` folder that is a symlink, not root's, or writable by others (lintux-modkit `appdata`). Since 1.1.3, a `/DATA` that another user owns (uid 999 on one ZimaOS 1.8 box — that user could rename `/DATA/AppData`) is given back to root, with the way back in the log.
 
 ## Install (on the ZimaOS host)
 
