@@ -1,6 +1,6 @@
 # Nebula for ZimaOS
 
-**Version 1.1.2** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
+**Version 1.1.3** · ZimaOS 1.8.0 (amd64) · sysext module `nebula`
 
 [Nebula](https://github.com/slackhq/nebula), the overlay network by Slack, as a native ZimaOS module — no container, the node runs on the host with its own TUN interface.
 
@@ -40,7 +40,7 @@ A unit inside a sysext is not started at boot on ZimaOS: `multi-user.target` is 
 
 ZFW drops incoming traffic it does not know. It does not know Nebula's UDP port (`listen.port`, 4242 in the example config) — open it for a lighthouse or a node others connect to (the tile does that when it turns Nebula on). Up to ZFW 1.0.29 it does not know the interface either (`tun.dev`, `nebula1` in the example config): allow the services you want to reach over the overlay on it, or update to ZFW 1.0.30, which trusts `nebula+`. Nebula's own `firewall:` section in the config applies in addition.
 
-**Folder check** (since 1.1.1): `/DATA/AppData` is writable by everyone on ZimaOS 1.8 (mode 0777 without the sticky bit; the share of `/DATA` is writable over SMB), so another user could replace `/DATA/AppData/nebula` with a folder of their own — a config and keys root then reads. Before nebula starts and before the tile reads the config, the module sets the sticky bit on `/DATA/AppData` (then only a folder's owner can rename it) and refuses a `nebula` folder that is a symlink, not root's, or writable by others (lintux-modkit `appdata`).
+**Folder check** (since 1.1.1): `/DATA/AppData` is writable by everyone on ZimaOS 1.8 (mode 0777 without the sticky bit; the share of `/DATA` is writable over SMB), so another user could replace `/DATA/AppData/nebula` with a folder of their own — a config and keys root then reads. Before nebula starts and before the tile reads the config, the module sets the sticky bit on `/DATA/AppData` (then only a folder's owner can rename it) and refuses a `nebula` folder that is a symlink, not root's, or writable by others (lintux-modkit `appdata`). Since 1.1.3, a `/DATA` that another user owns (uid 999 on one ZimaOS 1.8 box — that user could rename `/DATA/AppData`) is given back to root, with the way back in the log.
 
 ## Install (on the ZimaOS host)
 
@@ -62,8 +62,11 @@ sudo systemctl daemon-reload
 sh build.sh amd64              # downloads the release tarball and checks its pinned sha256; needs Go, node, ../lintux-modkit; the backend tests run the downloaded nebula-cert
 tools/check-reproducible.sh     # before a release: builds three times (umask 022, 002 and 077) and fails when the bytes differ
 ../lintux-modkit/tools/check-release.sh . v<version> nebula# after the release: rebuilds the tag, same bytes as the asset
-sudo sh tools/host-test.sh     # on the host after installing; `cleanup` removes what it created
+sudo sh tools/host-test.sh     # on the host after installing, with lintux-modkit tools/hosttest-lib.sh next to it;
+                               # a failure or abort removes what it created, after a clean run `cleanup` does
 ```
+
+`build.sh` builds only against the lintux-modkit commit in `lintux-modkit.ref`, without local changes — both for the scripts (`../lintux-modkit` or `LINTUX_MODKIT=`) and for the directory Go compiles (go.mod's `replace` or a `go.work`; `LINTUX_MODKIT` does not move it): `scripts/modkit-check.sh` asks `go list` which one that is. `MODKIT_DEV=1` builds anyway, with a warning, not for a release. `bash tools/test-modkit-check.sh` tests the check.
 
 The host test makes the host a lighthouse and runs a second node in its own network namespace behind a veth pair; a TCP connection over the overlay must fail before `enable` and get through after it. Measured on ZimaOS 1.8.0 (ZimaBoard 2) with ZFW active, 2026-10-23: 8 OK, 0 FAIL. The test opens the paths it needs in ZFW and removes exactly those again (`cleanup`). The test CA key is deleted right after signing.
 
